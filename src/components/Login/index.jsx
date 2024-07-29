@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import Modal from 'react-modal';
 import { BsShieldLock, BsPersonCircle, BsQuestionCircle } from "react-icons/bs";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebookSquare } from "react-icons/fa";
@@ -9,37 +8,37 @@ import Datepicker from "react-tailwindcss-datepicker";
 import { Navigate } from 'react-router-dom';
 import useAuthen from '../../hooks/useAuthen';
 import Footer from '../../layouts/Footer';
+import { useGoogleLogin, GoogleLogin } from '@react-oauth/google';
 
-// Modal.setAppElement('#root');
 const Authen = ({ }) => {
   const [errorLogin, setErrorLogin] = useState([]);
   const valuesErrorLogin = {
-    USERNAMELOGIN: 'Tài khoản không tồn tại',
+    EMAILLOGIN: 'Tài khoản không tồn tại',
     PASSWORDLOGIN: 'Sai mật khẩu',
   }
   // value of modalLogin
-  const [userNameLogin, setUserNameLogin] = useState('');
+  const [emailLogin, setEmailLogin] = useState('');
   const [passWordLogin, setPassWordLogin] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLogin, setIsLogin] = useState(true)
   const [authUser, setAuthUser] = useState(false);
   // value of modalRegister
-  const [userNameRegister, setUserNameRegister] = useState('');
+  const [emailRegister, setEmailRegister] = useState('');
   const [passWordRegister, setPassWordRegister] = useState('');
   const [fullNameRegister, setFullNameRegister] = useState('');
   const [DOBRegister, setDOBRegister] = useState('');
   const [genderRegister, setGenderRegister] = useState('');
 
   // value of hook
-  const { login, checkValueRegister, errorRegister, valuesErrorRegister, register, typeCheckRegister } = useAuthen();
+  const { login, checkValueRegister, errorRegister, valuesErrorRegister, register, typeCheckRegister, handleLoginWithGoogle } = useAuthen();
   // value loading
   const [loading, setLoading] = useState(false);
 
 
   const clearValues = () => {
-    setUserNameLogin('');
+    setEmailLogin('');
     setPassWordLogin('');
-    setUserNameRegister('');
+    setEmailRegister('');
     setPassWordRegister('');
     setFullNameRegister('');
     setDOBRegister('');
@@ -51,7 +50,7 @@ const Authen = ({ }) => {
 
     let newErrors = [];
     if (response.status === 404) {
-      newErrors.push(valuesErrorLogin.USERNAMELOGIN);
+      newErrors.push(valuesErrorLogin.EMAILLOGIN);
     }
     if (response.status === 400) {
       newErrors.push(valuesErrorLogin.PASSWORDLOGIN);
@@ -69,12 +68,12 @@ const Authen = ({ }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorLogin([]);
-    if (userNameLogin === '' || passWordLogin === '') {
+    if (emailLogin === '' || passWordLogin === '') {
       toast.error('Vui lòng nhập đầy đủ thông tin');
       return;
     }
     setLoading(true);
-    funcationLogin(userNameLogin, passWordLogin);
+    funcationLogin(emailLogin, passWordLogin);
   };
 
   const togglePasswordVisibility = () => {
@@ -82,24 +81,24 @@ const Authen = ({ }) => {
   };
 
   const handleCheckValueRegister = (typeCheck) => {
-    checkValueRegister(userNameRegister, passWordRegister, fullNameRegister, DOBRegister.startDate, typeCheck);
+    checkValueRegister(emailRegister, passWordRegister, fullNameRegister, DOBRegister.startDate, typeCheck);
   }
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    if (userNameRegister === '' || passWordRegister === '' || fullNameRegister === ''
+    if (emailRegister === '' || passWordRegister === '' || fullNameRegister === ''
       || DOBRegister === '' || genderRegister === '') {
       toast.error('Vui lòng nhập đầy đủ thông tin');
       return;
     }
     if (errorRegister.length <= 0) {
-      const response = await register(userNameRegister, passWordRegister, fullNameRegister, genderRegister, DOBRegister.startDate);
+      const response = await register(emailRegister, passWordRegister, fullNameRegister, genderRegister, DOBRegister.startDate);
       console.log('response', response);
       setLoading(true);
       if (response.status === 201) {
         toast.success('Đăng ký thành công');
-        funcationLogin(userNameRegister, passWordRegister);
+        funcationLogin(emailRegister, passWordRegister);
       }
       setLoading(false);
     }
@@ -110,7 +109,7 @@ const Authen = ({ }) => {
   };
   const handleDateChange = (dob) => {
     setDOBRegister(dob);
-    checkValueRegister(userNameRegister, passWordRegister, fullNameRegister, dob.startDate, typeCheckRegister.dob);
+    checkValueRegister(emailRegister, passWordRegister, fullNameRegister, dob.startDate, typeCheckRegister.dob);
   };
   const renderError = (errorArray, errorValue) => {
     return errorArray.map((error, index) => (
@@ -123,43 +122,29 @@ const Authen = ({ }) => {
   if (authUser) {
     return <Navigate to='/' replace={true} />;
   }
+  const handleGoogleLoginClick = (e) => {
+    e.preventDefault();
+    handleLoginWithGoogle();
+  };
+  
   return (
-    // <Modal
-    //   isOpen={openModal}
-    //   onRequestClose={closeModal}
-    //   style={{
-    //     overlay: {
-    //       backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    //     },
-    //     content: {
-    //       width: '50%',
-    //       height: isLogin ? '70%' : '90%',
-    //       margin: 'auto',
-    //       paddingTop: '25px',
-    //       borderRadius: '10px',
-    //       border: 'none',
-    //       background: 'white',
-    //       boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-    //     }
-    //   }}
-    // >
     <div className='h-svh'>
       {isLogin ?
         <div className='flex flex-col items-center justify-evenly h-2/3'>
           <p className='font-bold text-3xl text-center font-roboto'>ĐĂNG NHẬP</p>
           <form onSubmit={handleLogin} className="w-1/3">
-            {userNameLogin && <label className="font-medium text-base mb-3">Tên đăng nhập</label>}
+            {emailLogin && <label className="font-medium text-base mb-3">Email</label>}
             <div className='flex flex-row justify-between items-center'>
               <BsPersonCircle />
               <input
                 type="text"
-                placeholder="Tên đăng nhập"
-                value={userNameLogin}
-                onChange={(e) => setUserNameLogin(e.target.value)}
+                placeholder="Email"
+                value={emailLogin}
+                onChange={(e) => setEmailLogin(e.target.value)}
                 className="w-full m-2 p-2 border rounded-lg hover:border-gray-500 hover:border-2"
               />
             </div>
-            {errorLogin.length > 0 && renderError(errorLogin, valuesErrorLogin.USERNAMELOGIN)}
+            {errorLogin.length > 0 && renderError(errorLogin, valuesErrorLogin.EMAILLOGIN)}
 
             {passWordLogin && <label className='font-medium text-base mb-3'>Mật khẩu</label>}
             <div className='flex flex-row justify-between items-center'>
@@ -185,8 +170,14 @@ const Authen = ({ }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <p className='pb-2 font-medium'> Hoặc đăng nhập với</p>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '80px' }}>
-                <FcGoogle size={30} />
+              <div className='flex flex-row items-center justify-between w-20'>
+                <div className='m-2'>
+                  {/* <GoogleLogin
+                    onSuccess={handleLoginGG}
+                    onFailure={handleLoginGG}
+                  /> */}
+                </div>
+                <button onClick={handleGoogleLoginClick}><FcGoogle size={30} color='#0066cc' /></button>
                 <FaFacebookSquare size={30} color='#0066cc' />
               </div>
             </div>
@@ -221,14 +212,13 @@ const Authen = ({ }) => {
                 <input
                   type="text"
                   placeholder="Không chứa khoảng trắng, ít nhất 6 kí tự"
-                  value={userNameRegister}
-                  onBlur={() => handleCheckValueRegister(typeCheckRegister.userName)}
-                  onChange={(e) => setUserNameRegister(e.target.value)}
+                  value={emailRegister}
+                  onBlur={() => handleCheckValueRegister(typeCheckRegister.email)}
+                  onChange={(e) => setEmailRegister(e.target.value)}
                   className="p-2 border  rounded-lg hover:border-gray-500 hover:border-2"
                 />
-                {errorRegister.length > 0 && (renderError(errorRegister, valuesErrorRegister.USERNAME_LENGTH))}
-                {errorRegister.length > 0 && (renderError(errorRegister, valuesErrorRegister.USERNAME_SPACE))}
-                {errorRegister.length > 0 && (renderError(errorRegister, valuesErrorRegister.USERNAME_EXIST))}
+                {errorRegister.length > 0 && (renderError(errorRegister, valuesErrorRegister.EMAIL_INVALID))}
+                {errorRegister.length > 0 && (renderError(errorRegister, valuesErrorRegister.EMAIL_EXIST))}
               </div>
 
             </div>

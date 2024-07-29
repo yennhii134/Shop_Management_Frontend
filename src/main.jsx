@@ -5,15 +5,18 @@ import './index.css'
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthenProvider } from './contexts/AuthenContext.jsx';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <AuthenProvider>
-        <App />
-        <Toaster />
-      </AuthenProvider>
-    </BrowserRouter>
-  </React.StrictMode >
-);
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_CLIENT_ID}>
+    <React.StrictMode>
+      <BrowserRouter>
+        <AuthenProvider>
+          <App />
+          <Toaster />
+        </AuthenProvider>
+      </BrowserRouter>
+    </React.StrictMode >
+  </GoogleOAuthProvider>
 
+);

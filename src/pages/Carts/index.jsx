@@ -5,6 +5,7 @@ import useCart from '../../hooks/useCart';
 import useProduct from '../../hooks/useProduct';
 import { GiCheckMark } from "react-icons/gi";
 import useOrder from '../../hooks/useOrder';
+import { ClipLoader } from 'react-spinners';
 
 const Carts = () => {
     const { carts, fetchCarts, deleteCartItem, updateQuantity, payment } = useCart();
@@ -14,6 +15,7 @@ const Carts = () => {
     const timeoutRef = useRef({});
     const [cartAddToPayment, setCartAddToPayment] = useState([]);
     const { createOrder } = useOrder();
+    const [isLoading, setIsLoading] = useState([]);
 
     useEffect(() => {
         fetchCarts();
@@ -35,12 +37,14 @@ const Carts = () => {
     }, [carts]);
 
     const handleDeleteCartItem = async (id) => {
+        setIsLoading([...isLoading, id]);
         if (cartAddToPayment.some(product => product.id === id)) {
             const newProductAddToPayment = cartAddToPayment.filter(product => product.id !== id);
             setCartAddToPayment(newProductAddToPayment);
         }
 
         await deleteCartItem(id, true);
+        setIsLoading(isLoading.filter(itemId => itemId !== id));
     }
 
     const handleQuantityChange = (cart, newQuantity) => {
@@ -49,16 +53,14 @@ const Carts = () => {
             [cart.id]: newQuantity
         }));
 
-        // Clear previous timeout if exists
         if (timeoutRef.current[cart.id]) {
             clearTimeout(timeoutRef.current[cart.id]);
         }
 
-        // Set a new timeout to update quantity after 5 seconds
         timeoutRef.current[cart.id] = setTimeout(async () => {
             await updateQuantity(cart, newQuantity, totalPrice[cart.id]);
             console.log(`Updated quantity for item ${cart.id} to ${newQuantity}`);
-        }, 5000);
+        }, 3000);
     }
     useEffect(() => {
         return () => {
@@ -190,10 +192,15 @@ const Carts = () => {
                                         </button>
                                     </div>
                                     <div className='bg-black flex flex-row items-center rounded-xl py-2 px-4'>
-                                        <HiTrash size={20} color='white' />
-                                        <button className='w-2/12 text-white pl-2 font-bold'
-                                            onClick={() => handleDeleteCartItem(cart.id)}>
-                                            Xóa</button>
+                                        {isLoading.includes(cart.id) ? <ClipLoader size={18} color='white' /> :
+                                            <div className='flex flex-row items-center'>
+                                                <HiTrash size={20} color='white' />
+                                                <button className='w-2/12 text-white pl-2 font-bold'
+                                                    onClick={() => handleDeleteCartItem(cart.id)}>
+                                                    Xóa
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>

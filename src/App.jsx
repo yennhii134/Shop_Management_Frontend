@@ -7,6 +7,7 @@ import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Carts from './pages/Carts';
 import Footer from './layouts/Footer';
+
 const App = () => {
   return (
     <>

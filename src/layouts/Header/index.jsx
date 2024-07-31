@@ -60,13 +60,6 @@ const Header = () => {
         }
         setIsLoading(false);
     }
-    const checkAuthUser = () => {
-        if (!authUser) {
-            toast.error('Vui lòng đăng nhập để xem giỏ hàng');
-        } else {
-            window.location.href = '/carts';
-        }
-    }
 
     return (
         <nav className="py-4 px-8">
@@ -97,8 +90,7 @@ const Header = () => {
                 <div className='flex space-x-4'>
                     <Button icon={<BsSearchHeart size={22} />} />
                     <Button icon={<BsChatHeart size={22} />} isNotification />
-                    {/* <a href='/carts'> <Button icon={<BsBagHeart size={22} />} isNotification /></a> */}
-                    <Button icon={<BsBagHeart size={22} />} isNotification onClick={checkAuthUser} />
+                    <a href='/carts'> <Button icon={<BsBagHeart size={22} />} isNotification /> </a>
                     {authUser ? (
                         <div className='relative' onMouseEnter={() => setDropdown(dropDrownValues.User)} onMouseLeave={() => setDropdown('')}>
                             <button
@@ -124,7 +116,7 @@ const Header = () => {
                     )}
                 </div>
             </div>
-        </nav>
+        </nav >
     )
 }
 

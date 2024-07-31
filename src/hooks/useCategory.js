@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axiosInstance from "../services/axiosInstance";
+import axiosInstance from "../api/axiosInstance";
 
 const useCategory = () => {
     const [categories, setCategories] = useState([]);

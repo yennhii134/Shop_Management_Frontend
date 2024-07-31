@@ -1,27 +1,18 @@
 import { useState } from "react";
-import axiosInstance from "../services/axiosInstance";
+import axiosInstance from "../api/axiosInstance";
 import { useAuthenContext } from "../contexts/AuthenContext";
 import { useGoogleLogin } from "@react-oauth/google";
+import axios from "axios";
 
 const useAuthen = () => {
     const { setAuthUser, setAccessToken, setRefreshToken } = useAuthenContext();
-    const valuesErrorRegister = {
-        EMAIL_INVALID: 'Email không hợp lệ',
-        EMAIL_EXIST: 'Tên đăng nhập đã tồn tại',
-        PASSWORD_LENGTH: 'Mật khẩu phải ít nhất 8 kí tự và có ít nhất 1 chữ cái, 1 chữ số và 1 kí tự đặc biệt',
-        FULLNAME_SPECIAL: 'Họ và tên không được chứa kí tự đặc biệt',
-        AGE: 'Phải trên 15 tuổi',
-        FULLNAME_LENGTH: 'Họ và tên không được quá 100 kí tự'
-    }
-    const [errorRegister, setErrorRegister] = useState([]);
-    const typeCheckRegister = { email: 'email', password: 'password', fullName: 'fullName', dob: 'dob' };
 
-    const login = async (email, password) => {
+    const login = async (userRequest) => {
         try {
-            const respone = await axiosInstance.post('/auth/login', { email, password });
+            const respone = await axiosInstance.post('/auth/login', userRequest);
             const data = respone.data;
 
-            if (data.status === 200) {
+            if (data.code === 200) {
                 console.log('Login Success:', data);
                 setAuthUser(data.data.userRespone);
                 setAccessToken(data.data.accessToken);
@@ -42,9 +33,9 @@ const useAuthen = () => {
         }
     }
 
-    const register = async (email, password, fullName, gender, dob) => {
+    const register = async (userCreateRequest) => {
         try {
-            const respone = await axiosInstance.post('/auth/register', { email, password, fullName, gender, dob });
+            const respone = await axiosInstance.post('/auth/register', userCreateRequest);
             return respone.data;
         } catch (error) {
             console.log("Error at useAuthen -> register: ", error);
@@ -54,38 +45,78 @@ const useAuthen = () => {
     const handleLoginWithGoogle = useGoogleLogin({
         onSuccess: async (codeResponse) => {
             const { access_token } = codeResponse;
+
             try {
-                const response = await axiosInstance.post('/auth/google-login', { token: access_token });
-                // console.log('Backend Response:', response.data);
+                const userInfo = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: {
+                        Authorization: `Bearer ${access_token}`
+                    }
+                });
+                console.log('User Info:', userInfo.data);
+                const { email, sub, name } = userInfo.data;
 
-                const { email, id, name } = response.data;
+                try {
+                    const registerResponse = await register({
+                        email: email,
+                        password: sub,
+                        fullName: name,
+                    });
 
-                const registerResponse = await register(email, id, name, null, null)
-                // console.log('Register Response:', registerResponse);
-                
-                if(registerResponse.status === 400) {
-                    console.log('Email đã tồn tại, đang thực hiện đăng nhập...');
-                    await login(email, id);
-                    return;
+                    if (registerResponse.code === 201 || registerResponse.code === 1005) {
+                        await login({ email: email, password: sub });
+                    }
+
+                } catch (registerError) {
+                    console.error('Error during registration:', registerError);
                 }
-                if (registerResponse.status === 201) {
-                    await login(data.email, data.id);
-                }
-
-            } catch (error) {
-                console.error('Error sending token to backend:', error);
+            } catch (authError) {
+                console.error('Error sending token to backend:', authError);
             }
         },
         onError: (error) => console.log('Login Failed:', error)
     });
+
+    const handleLoginWithFacebook = async (provider, data) => {
+        const { accessToken, userID } = data;
+        try {
+            const response = await axios.get(`https://graph.facebook.com/v10.0/${userID}`, {
+                params: {
+                    fields: 'id,name,picture',
+                    access_token: accessToken
+                }
+            });
+            console.log('User data:', response.data);
+
+            if (response.data.error) {
+                console.log('Error while login with Facebook:', response.data.error);
+                return;
+            }
+
+            const { id, name, picture } = response.data;
+
+            try {
+                const registerResponse = await register({
+                    facebookId: id,
+                    password: id,
+                    fullName: name
+                });
+                if (registerResponse.code === 201 || registerResponse.code === 1005) {
+                    await login({ facebookId: id, password: id });
+                }
+            } catch (registerError) {
+                console.error('Error during registration:', registerError);
+            }
+        } catch (error) {
+            console.error('Error sending token:', error);
+        }
+    };
 
     const logout = async () => {
         try {
             const token = JSON.parse(localStorage.getItem('refreshToken'));
             if (token) {
                 const respone = await axiosInstance.post('/auth/logout', { token });
-                const data = respone.data;
-                if (data.status === 200) {
+                if (respone.status === 200) {
                     localStorage.clear();
                     window.location.reload();
                 }
@@ -96,70 +127,14 @@ const useAuthen = () => {
 
         }
     }
-    const isAtLeastFifteenYearsOld = (DOBRegister) => {
-        const currentDate = new Date();
-        const dob = new Date(DOBRegister);
-        let age = currentDate.getFullYear() - dob.getFullYear();
-        const m = currentDate.getMonth() - dob.getMonth();
 
-        if (m < 0 || (m === 0 && currentDate.getDate() < dob.getDate())) {
-            age--;
-        }
-
-        return age >= 15;
-    }
-
-    const checkValueRegister = async (email, password, fullName, dob, typeCheck) => {
-        let newErrors = [...errorRegister];
-
-        if (email !== '' && typeCheck === typeCheckRegister.email) {
-            newErrors = newErrors.filter(
-                error => error !== valuesErrorRegister.EMAIL_INVALID
-                    && error !== valuesErrorRegister.EMAIL_EXIST);
-            if (email.length > 20 || !email.trim().toLowerCase().endsWith("@gmail.com")) {
-                newErrors.push(valuesErrorRegister.EMAIL_INVALID);
-            }
-            const checkUserNameRegister = await checkEmail(email);
-            if (checkUserNameRegister.data) {
-                newErrors.push(valuesErrorRegister.EMAIL_EXIST);
-            }
-        }
-        if (password !== '' && typeCheck === typeCheckRegister.password) {
-            newErrors = newErrors.filter(error => error !== valuesErrorRegister.PASSWORD_LENGTH);
-            if (!password.match(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)) {
-                newErrors.push(valuesErrorRegister.PASSWORD_LENGTH);
-            }
-        }
-        if (fullName !== '' && typeCheck === typeCheckRegister.fullName) {
-            newErrors = newErrors.filter(error => error !== valuesErrorRegister.FULLNAME_SPECIAL);
-            if (!fullName.match(/^[\p{L}\p{N}\s]+$/u)) {
-                newErrors.push(valuesErrorRegister.FULLNAME_SPECIAL);
-            }
-            if (fullName.length > 100) {
-                newErrors.push(valuesErrorRegister.FULLNAME_LENGTH);
-            }
-        }
-        if (dob && typeCheck === typeCheckRegister.dob) {
-            newErrors = newErrors.filter(error => error !== valuesErrorRegister.AGE);
-            if (!isAtLeastFifteenYearsOld(dob)) {
-                newErrors.push(valuesErrorRegister.AGE);
-            }
-        }
-        if (newErrors.length === 0) {
-            setErrorRegister([]);
-        }
-        setErrorRegister(newErrors);
-    }
     return {
         login,
         checkEmail,
-        checkValueRegister,
-        errorRegister,
-        valuesErrorRegister,
         handleLoginWithGoogle,
+        handleLoginWithFacebook,
         register,
-        typeCheckRegister,
-        logout
+        logout,
     };
 }
 

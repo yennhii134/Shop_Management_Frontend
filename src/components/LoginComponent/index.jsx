@@ -6,9 +6,11 @@ import { BeatLoader } from 'react-spinners';
 import toast from 'react-hot-toast';
 import Datepicker from "react-tailwindcss-datepicker";
 import { Navigate } from 'react-router-dom';
-import useAuthen from '../../hooks/useAuthen';
-import Footer from '../../layouts/Footer';
 import { useGoogleLogin, GoogleLogin } from '@react-oauth/google';
+import { LoginSocialFacebook } from 'reactjs-social-login';
+import { FacebookLoginButton } from 'react-social-login-buttons'
+import useAuthen from '../../hooks/useAuthen';
+import useError from '../../hooks/useError';
 
 const Authen = ({ }) => {
   const [errorLogin, setErrorLogin] = useState([]);
@@ -16,13 +18,14 @@ const Authen = ({ }) => {
     EMAILLOGIN: 'Tài khoản không tồn tại',
     PASSWORDLOGIN: 'Sai mật khẩu',
   }
-  // value of modalLogin
+  // value of Login
   const [emailLogin, setEmailLogin] = useState('');
   const [passWordLogin, setPassWordLogin] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLogin, setIsLogin] = useState(true)
   const [authUser, setAuthUser] = useState(false);
-  // value of modalRegister
+
+  // value of Register
   const [emailRegister, setEmailRegister] = useState('');
   const [passWordRegister, setPassWordRegister] = useState('');
   const [fullNameRegister, setFullNameRegister] = useState('');
@@ -30,7 +33,20 @@ const Authen = ({ }) => {
   const [genderRegister, setGenderRegister] = useState('');
 
   // value of hook
-  const { login, checkValueRegister, errorRegister, valuesErrorRegister, register, typeCheckRegister, handleLoginWithGoogle } = useAuthen();
+  const
+    {
+      login,
+      register,
+      handleLoginWithGoogle,
+      handleLoginWithFacebook,
+    }
+      = useAuthen();
+  const {
+    checkValueRegister,
+    errorRegister,
+    valuesErrorRegister,
+    typeCheckRegister, } = useError();
+
   // value loading
   const [loading, setLoading] = useState(false);
 
@@ -49,10 +65,10 @@ const Authen = ({ }) => {
     const response = await login(userName, password);
 
     let newErrors = [];
-    if (response.status === 404) {
+    if (response.code === 404) {
       newErrors.push(valuesErrorLogin.EMAILLOGIN);
     }
-    if (response.status === 400) {
+    if (response.code === 400) {
       newErrors.push(valuesErrorLogin.PASSWORDLOGIN);
     }
     setErrorLogin(newErrors);
@@ -92,11 +108,18 @@ const Authen = ({ }) => {
       toast.error('Vui lòng nhập đầy đủ thông tin');
       return;
     }
+    setLoading(true);
     if (errorRegister.length <= 0) {
-      const response = await register(emailRegister, passWordRegister, fullNameRegister, genderRegister, DOBRegister.startDate);
-      console.log('response', response);
-      setLoading(true);
-      if (response.status === 201) {
+
+      const response = await register({
+        email: emailRegister,
+        password: passWordRegister,
+        fullName: fullNameRegister,
+        gender: genderRegister,
+        dob: DOBRegister.startDate,
+      });
+
+      if (response.code === 201) {
         toast.success('Đăng ký thành công');
         funcationLogin(emailRegister, passWordRegister);
       }
@@ -126,7 +149,11 @@ const Authen = ({ }) => {
     e.preventDefault();
     handleLoginWithGoogle();
   };
-  
+  const handleFacebookLoginClick = async (provider, data) => {
+    await handleLoginWithFacebook(provider, data);
+
+  }
+
   return (
     <div className='h-svh'>
       {isLogin ?
@@ -170,15 +197,25 @@ const Authen = ({ }) => {
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <p className='pb-2 font-medium'> Hoặc đăng nhập với</p>
-              <div className='flex flex-row items-center justify-between w-20'>
-                <div className='m-2'>
-                  {/* <GoogleLogin
+              <div className='flex flex-row items-center justify-between w-20 '>
+                {/* <GoogleLogin
                     onSuccess={handleLoginGG}
                     onFailure={handleLoginGG}
                   /> */}
-                </div>
                 <button onClick={handleGoogleLoginClick}><FcGoogle size={30} color='#0066cc' /></button>
-                <FaFacebookSquare size={30} color='#0066cc' />
+                <LoginSocialFacebook
+                  isOnlyGetToken
+                  appId={import.meta.env.VITE_CLIENT_FACEBOOK_ID}
+                  // onLoginStart={responseFacebook}
+                  onResolve={({ provider, data }) => {
+                    handleFacebookLoginClick(provider, data)
+                  }}
+                  onReject={(err) => {
+                    console.log('Error login with Facebook:', err);
+                  }}
+                >
+                  <FaFacebookSquare size={30} color='#0066cc' />
+                </LoginSocialFacebook>
               </div>
             </div>
             <button
@@ -322,9 +359,6 @@ const Authen = ({ }) => {
           </div>
         </div>
       }
-      <div className='mt-14'>
-        <Footer />
-      </div>
       {/* </Modal > */}
     </div>
   );

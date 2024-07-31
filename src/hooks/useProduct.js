@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axiosInstance from "../services/axiosInstance";
+import axiosInstance from "../api/axiosInstance";
 
 const useProduct = () => {
     const limit = 9;
@@ -24,11 +24,13 @@ const useProduct = () => {
                 }
             });
             // console.log('response in fetchProducts:', response);
-            const data = response.data;
-            setProducts(data.content);
-            setTotalPages(data.totalPages)
-            setPageNumber(data.pageable.pageNumber)
-            return data;
+            if (response.status === 200) {
+                const data = response.data;
+                setProducts(data.content);
+                setTotalPages(data.totalPages)
+                setPageNumber(data.pageable.pageNumber)
+                return data;
+            }
         } catch (error) {
             console.error('Error at useProduct -> fetchProducts: ', error);
         }
@@ -42,11 +44,13 @@ const useProduct = () => {
                 }
             });
             // console.log('response', response.data);
-            const data = response.data;
-            setProducts(data.content);
-            setTotalPages(data.totalPages)
-            setPageNumber(data.pageable.pageNumber)
-            return data;
+            if (response.status === 200) {
+                const data = response.data;
+                setProducts(data.content);
+                setTotalPages(data.totalPages)
+                setPageNumber(data.pageable.pageNumber)
+                return data;
+            }
         } catch (error) {
             console.error('Error at useProduct -> fetchProductsByCategory: ', error);
         }

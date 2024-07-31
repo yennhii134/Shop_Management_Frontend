@@ -1,11 +1,10 @@
 import { useState } from "react";
-import axiosInstance from "../services/axiosInstance";
+import axiosInstance from "../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const useCart = () => {
     const [carts, setCarts] = useState([]);
     const fetchCarts = async () => {
-        console.log('fetchCarts');
         try {
             const response = await axiosInstance.get('/carts');
             const data = response.data;

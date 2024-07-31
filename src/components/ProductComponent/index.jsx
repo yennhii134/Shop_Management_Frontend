@@ -86,7 +86,7 @@ const Products = () => {
         }
         const productDetail = productDetails.productDetail.find(detail => detail.productColor === colorOfProductOneColor || colorAddToCart);
         const response = await addProductToCart(productDetails.id, productDetail.id, quantity, totalPrice, colorAddToCart);
-        if (response.status === 200) {
+        if (response.code === 200) {
             toast.success('Thêm vào giỏ hàng thành công');
             setModalOpen(false);
         }

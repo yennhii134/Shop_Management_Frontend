@@ -6,6 +6,7 @@ const axiosInstance = axios.create({
     baseURL: config.baseURL,
 
 });
+
 axiosInstance.interceptors.request.use(
     async (config) => {
         console.log('config', config);
@@ -28,11 +29,14 @@ axiosInstance.interceptors.response.use(
     },
     async (error) => {
         if (error.response.status === 401) {
+            setTimeout(() => {
+                console.log('error', error);
+            }, 1000);
             const token = JSON.parse(localStorage.getItem('refreshToken'));
             if (!token) {
                 localStorage.clear();
                 toast.error('Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
-                window.location.href = '/';
+                // window.location.href = '/';
             } else {
                 const respone = await axios.post(`${config.baseURL}/auth/refresh-token`, {
                     token,

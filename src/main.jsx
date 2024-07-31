@@ -8,7 +8,7 @@ import { AuthenProvider } from './contexts/AuthenContext.jsx';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <GoogleOAuthProvider clientId={import.meta.env.VITE_CLIENT_ID}>
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_CLIENT_GOOGLE_ID}>
     <React.StrictMode>
       <BrowserRouter>
         <AuthenProvider>

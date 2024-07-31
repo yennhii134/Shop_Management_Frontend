@@ -1,6 +1,6 @@
 import { useState } from "react";
 import useCart from "./useCart";
-import axiosInstance from "../services/axiosInstance";
+import axiosInstance from "../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const useOrder = () => {
